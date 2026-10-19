@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.idea/
+app.log
+.pg_password
+setup_log.txt

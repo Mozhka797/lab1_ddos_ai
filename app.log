@@ -1,0 +1,31 @@
+2026-10-20 03:22:41 [INFO] Приложение запущено
+2026-10-20 03:23:31 [INFO] Попытка подключения: postgres@localhost:5432/ddos_lab
+2026-10-20 03:23:31 [INFO] Подключение успешно (сервер PostgreSQL 180006)
+2026-10-20 03:23:45 [INFO] BEGIN: создание схемы ddos_ai
+2026-10-20 03:23:45 [INFO] DDL: DROP SCHEMA IF EXISTS ddos_ai CASCADE
+2026-10-20 03:23:45 [INFO] DDL: CREATE SCHEMA ddos_ai
+2026-10-20 03:23:45 [INFO] DDL: SET search_path TO ddos_ai
+2026-10-20 03:23:45 [INFO] DDL: CREATE TYPE attack_type AS ENUM ( 'syn_flood', 'udp_flood', 'http_flood', 'icmp_flood', 'dns_amplification', 'ntp_amplification', 'slowloris', 'benign' )
+2026-10-20 03:23:45 [INFO] DDL: CREATE TYPE model_algorithm AS ENUM ( 'random_forest', 'xgboost', 'lstm', 'cnn', 'transformer', 'autoencoder', 'isolation_forest' )
+2026-10-20 03:23:45 [INFO] DDL: CREATE TYPE run_status AS ENUM ('queued', 'running', 'finished', 'failed')
+2026-10-20 03:23:45 [INFO] DDL: CREATE TYPE dataset_source AS ENUM ('public', 'synthetic', 'production_mirror')
+2026-10-20 03:23:45 [INFO] DDL: CREATE TABLE datasets ( dataset_id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, source dataset_source NOT NULL, collected_on DATE NOT NULL, rows_count BIGINT NOT NULL, attack_types attack_type[] NOT NULL, is_labeled BOOLEAN NOT NULL DEFAULT TRUE, CONSTRAINT uq_datasets_name UNIQUE (name), CONSTRAINT chk_datasets_name_len CHECK (char_length(trim(name)) >= 3), CONSTRAINT chk_datasets_rows CHECK ( …
+2026-10-20 03:23:45 [INFO] DDL: CREATE TABLE models ( model_id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, version VARCHAR(20) NOT NULL, algorithm model_algorithm NOT NULL, features TEXT[] NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT uq_models_name_version UNIQUE (name, version), CONSTRAINT chk_models_version_fmt CHECK (version ~ '^\d+\.\d+(\.\d+)?$'), CONSTRAINT chk_models_features CHECK (cardinality(fe …
+2026-10-20 03:23:45 [INFO] DDL: CREATE TABLE experiments ( experiment_id SERIAL PRIMARY KEY, title VARCHAR(150) NOT NULL, dataset_id INTEGER NOT NULL, model_id INTEGER, target_attack attack_type NOT NULL, started_on DATE NOT NULL DEFAULT CURRENT_DATE, gpu_hours NUMERIC(8,2) NOT NULL DEFAULT 0, is_production BOOLEAN NOT NULL DEFAULT FALSE, CONSTRAINT uq_experiments_title UNIQUE (title), CONSTRAINT chk_experiments_gpu CHECK (gpu_h …
+2026-10-20 03:23:45 [INFO] DDL: CREATE TABLE runs ( run_id SERIAL PRIMARY KEY, experiment_id INTEGER NOT NULL, run_number SMALLINT NOT NULL, status run_status NOT NULL DEFAULT 'queued', started_at TIMESTAMP NOT NULL DEFAULT now(), finished_at TIMESTAMP, accuracy NUMERIC(5,4), precision_ NUMERIC(5,4), recall NUMERIC(5,4), f1_score NUMERIC(5,4), latency_ms REAL, threshold REAL NOT NULL DEFAULT 0.5, tags TEXT[] NOT NULL DEFAULT '{} …
+2026-10-20 03:23:45 [INFO] DDL: CREATE INDEX idx_runs_experiment ON runs (experiment_id)
+2026-10-20 03:23:45 [INFO] DDL: CREATE INDEX idx_experiments_dataset ON experiments (dataset_id)
+2026-10-20 03:23:45 [INFO] COMMIT: создание схемы ddos_ai
+2026-10-20 03:24:00 [INFO] BEGIN: INSERT демо-данных
+2026-10-20 03:24:00 [INFO] DML: INSERT INTO datasets … (execute_values, 4 строк)
+2026-10-20 03:24:00 [INFO] DML: INSERT INTO models … (execute_values, 5 строк)
+2026-10-20 03:24:00 [INFO] DML: INSERT INTO experiments (title, dataset_id, model_id, target_attack, started_on, gpu_hours, is_production) VALUES ('RF baseline против SYN flood', 1, 1, 'syn_flood', '2026-09-02'::date, '3.5', false) ON CONFLICT (title) DO UPDATE SET title = EXCLUDED.title RETURNING experiment_id
+2026-10-20 03:24:00 [INFO] DML: INSERT INTO experiments (title, dataset_id, model_id, target_attack, started_on, gpu_hours, is_production) VALUES ('XGBoost: амплификация DNS/NTP', 1, 2, 'dns_amplification', '2026-09-10'::date, '12.0', true) ON CONFLICT (title) DO UPDATE SET title = EXCLUDED.title RETURNING experiment_id
+2026-10-20 03:24:00 [INFO] DML: INSERT INTO experiments (title, dataset_id, model_id, target_attack, started_on, gpu_hours, is_production) VALUES ('LSTM по последовательностям пакетов', 3, 3, 'syn_flood', '2026-09-21'::date, '48.25', false) ON CONFLICT (title) DO UPDATE SET title = EXCLUDED.title RETURNING experiment_id
+2026-10-20 03:24:00 [INFO] DML: INSERT INTO experiments (title, dataset_id, model_id, target_attack, started_on, gpu_hours, is_production) VALUES ('Transformer для L7 HTTP flood', 2, 4, 'http_flood', '2026-10-01'::date, '160.0', false) ON CONFLICT (title) DO UPDATE SET title = EXCLUDED.title RETURNING experiment_id
+2026-10-20 03:24:00 [INFO] DML: INSERT INTO experiments (title, dataset_id, model_id, target_attack, started_on, gpu_hours, is_production) VALUES ('Автоэнкодер на прод-зеркале', 4, 5, 'icmp_flood', '2026-10-12'::date, '20.75', false) ON CONFLICT (title) DO UPDATE SET title = EXCLUDED.title RETURNING experiment_id
+2026-10-20 03:24:00 [INFO] DML: INSERT INTO runs … (execute_values, 10 строк)
+2026-10-20 03:24:00 [INFO] COMMIT: INSERT демо-данных
+2026-10-20 03:24:09 [INFO] SELECT: SELECT e.experiment_id, e.title, d.name AS dataset, array_to_string(d.attack_types, ', ') AS dataset_attacks, COALESCE(m.name || ' v' || m.version, '— (модель удалена)') AS model, m.algorithm, e.target_attack, e.started_on, e.is_production, r.run_number, r.status, r.accuracy, r.precision_, r.recall, r.f1_score, r.latency_ms, r.threshold, array_to_string(r.tags, ', ') AS tags FROM experiments e JOI …
+2026-10-20 03:24:52 [INFO] Соединение закрыто
+2026-10-20 03:24:52 [INFO] Приложение закрыто
